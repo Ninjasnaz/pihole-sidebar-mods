@@ -7,6 +7,10 @@ Welcome! 👋 This is a small set of scripts that adds a couple of handy stats t
 | `Memory usage: 5.6 %` | `Memory: 0.3 / 5.7GB` |
 | *(no temperature)* | `Temp: 44.4°C` |
 
+<p align="center">
+  <img src="screenshot.png" alt="Pi-hole sidebar showing Memory 0.3 / 5.7GB and Temp 44.4°C" width="700">
+</p>
+
 Pi-hole v5 used to show CPU temperature in the sidebar, and v6 dropped it. If you run Pi-hole on a little single-board computer, you probably like keeping an eye on how warm it's running. This repo brings that back and makes memory usage easier to read at a glance.
 
 I built this for my **Orange Pi 4 Pro**, but it works on most boards with a few small tweaks. Read on and I'll walk you through it.
