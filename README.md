@@ -26,11 +26,23 @@ I built this for my **Orange Pi 4 Pro**, but it works on most boards with a few 
 
 ---
 
+## 📁 What's in the box
+
+| File | What it does |
+|---|---|
+| `install.sh` | Applies the mods and sets up the cron job. Start here |
+| `apply.sh` | Makes the actual edits. Safe to run as often as you like |
+| `temp.snippet` | The bit of code that reads your temperature sensor |
+| `uninstall.sh` | Restores the originals and removes the cron job |
+
+---
+
 ## 📋 Before you start
 
 You'll need:
 
 - **Pi-hole v6** installed directly on your device (not in Docker; see the [Docker section](#-running-pi-hole-in-docker) if that's you)
+- **SSH access** to that device (or a keyboard and screen plugged into it)
 - **Root access** (`sudo`)
 - About **5 minutes**
 
@@ -42,9 +54,37 @@ A few terms that'll come up:
 
 ---
 
-## 🔍 Step 1: Find your CPU temperature sensor
+## 🔌 Step 1: Connect to your Pi-hole device
 
-Every board names its sensors a little differently, so let's check yours first. Run this on your Pi-hole device:
+Every command in this guide runs **on the device that runs Pi-hole** (your Raspberry Pi, Orange Pi, etc.), not on your laptop. The easiest way to get there is **SSH**, which gives you a terminal on the device from your own computer.
+
+**1. Open a terminal on your computer**
+
+- **Mac:** open **Terminal** (press Cmd + Space, type `Terminal`, press Enter)
+- **Windows:** open **PowerShell** or **Windows Terminal** from the Start menu
+- **Linux:** open your terminal app
+
+**2. Connect with SSH**
+
+```bash
+ssh <username>@<device-ip>
+```
+
+Swap in your own details. For example: `ssh pi@192.168.1.50` or `ssh root@192.168.1.50`.
+
+- **Don't know the IP?** In the Pi-hole admin page, it's the address in your browser bar (like `http://192.168.1.50/admin`).
+- **First time connecting?** You'll be asked `Are you sure you want to continue connecting?` Type `yes` and press Enter.
+- Enter your device's password when asked. Nothing shows as you type. That's normal.
+
+You're in when the prompt changes to something like `pi@raspberrypi:~$`.
+
+> 💡 Sitting at the device with a keyboard and screen plugged in? Just open a terminal there instead.
+
+---
+
+## 🔍 Step 2: Find your CPU temperature sensor
+
+Every board names its sensors a little differently, so let's check yours first. In your SSH session, run:
 
 ```bash
 for z in /sys/class/thermal/thermal_zone*; do echo "$z  $(cat $z/type)  $(cat $z/temp)"; done
@@ -60,30 +100,83 @@ Here's what it looks like on an Orange Pi 4 Pro:
 /sys/class/thermal/thermal_zone4  gpu_thermal_zone   43896
 ```
 
-Look for the zones with **cpu** in the name. Note their numbers.
+Look for the zones with **cpu** in the name and write down their numbers. Here, that's **0** and **3**.
 
 > 💡 **Why two CPU zones?** Some chips (like the Allwinner A733) have two CPU clusters: fast "big" cores and efficient "little" cores. Each gets its own sensor. The script shows whichever one is hotter.
 
 ---
 
-## 📥 Step 2: Download the scripts
+## 📥 Step 3: Download the scripts
+
+Still in your SSH session:
+
+**1. Go to your home folder**
+
+```bash
+cd ~
+```
+
+This is a good, easy-to-find place to keep the scripts.
+
+**2. Make sure git is installed**
+
+```bash
+git --version
+```
+
+If you see a version number (like `git version 2.39.5`), skip ahead. If you see `command not found`, install it:
+
+```bash
+sudo apt update && sudo apt install -y git
+```
+
+**3. Download the repo**
 
 ```bash
 git clone https://github.com/ninjaSnaz/pihole-sidebar-mods.git
+```
+
+This creates a folder called `pihole-sidebar-mods` in your home folder.
+
+**4. Move into that folder**
+
+```bash
 cd pihole-sidebar-mods
 ```
 
+**5. Check the files are there**
+
+```bash
+ls
+```
+
+You should see `apply.sh`, `install.sh`, `LICENSE`, `README.md`, `screenshot.png`, `temp.snippet` and `uninstall.sh`.
+
+> ⚠️ **Keep this folder where it is.** The auto re-apply job runs the scripts from here. If you move or delete it, the mods won't come back after Pi-hole updates.
+
 ---
 
-## ✏️ Step 3: Match the script to your board
+## ✏️ Step 4: Match the script to your board
 
-Open `temp.snippet` and find this line:
+Using an **Orange Pi 4 Pro**? Skip this step. It's already set up for you.
+
+Everyone else, tell the script which sensors to read:
+
+**1. Open the snippet in the nano text editor** (from inside the `pihole-sidebar-mods` folder)
+
+```bash
+nano temp.snippet
+```
+
+**2. Find this line** (it's line 7):
 
 ```lua
 local a, b = rd(0), rd(3)
 ```
 
-Change the numbers to your CPU zones from Step 1:
+Use the arrow keys to move your cursor to it.
+
+**3. Change the numbers to your CPU zones from Step 2**
 
 | Your board has... | Use |
 |---|---|
@@ -91,29 +184,54 @@ Change the numbers to your CPU zones from Step 1:
 | One CPU zone (e.g. Raspberry Pi) | `rd(0), rd(0)` |
 | CPU zone is a different number | Swap in your number, like `rd(2), rd(2)` |
 
-Using an Orange Pi 4 Pro? You can skip this step. It's already set up for you.
+Leave everything else on the line exactly as it is.
+
+**4. Save and exit**
+
+- Press **Ctrl + O**, then **Enter** to save
+- Press **Ctrl + X** to exit
 
 ---
 
-## 🚀 Step 4: Install
+## 🚀 Step 5: Install
+
+**1. Run the installer** (from inside the `pihole-sidebar-mods` folder)
 
 ```bash
 sudo bash install.sh
 ```
 
-That's it! The installer:
+Enter your password if asked. You should see something like:
 
-1. Adds the temperature line to the sidebar
-2. Switches memory to show GB
-3. Backs up the original files (as `.bak`) first
+```
+Temp line: applied
+Memory line: applied
+Cron job installed: every 4 hours
+```
+
+The installer:
+
+1. Backs up the original Pi-hole files (as `.bak`)
+2. Adds the temperature line to the sidebar
+3. Switches memory to show GB
 4. Sets up a cron job to re-apply everything every 4 hours
 
-Now **hard-refresh** your Pi-hole admin page to see the changes:
+**2. See the result**
+
+Open your Pi-hole admin page in your browser and **hard-refresh** it, which forces the browser to load the new files:
 
 - **Mac:** Cmd + Shift + R
 - **Windows / Linux:** Ctrl + Shift + R
 
 You should see your new stats in the sidebar. 🎉
+
+**3. Disconnect** (optional)
+
+```bash
+exit
+```
+
+This closes the SSH session. The mods and the cron job keep running on their own.
 
 ---
 
@@ -121,34 +239,23 @@ You should see your new stats in the sidebar. 🎉
 
 Pi-hole updates replace the files these scripts edit, so your changes would disappear. That's what the cron job is for. Every 4 hours it checks whether the mods are still in place and quietly puts them back if they're not. When nothing's changed, it does nothing.
 
-Want them back right away after an update? Run:
+Want them back right away after an update? SSH into your device and run:
 
 ```bash
-sudo ./apply.sh
+sudo bash ~/pihole-sidebar-mods/apply.sh
 ```
 
 ---
 
 ## ↩️ Changing your mind
 
-No hard feelings! To undo everything:
+No hard feelings! SSH into your device and run:
 
 ```bash
-sudo bash uninstall.sh
+sudo bash ~/pihole-sidebar-mods/uninstall.sh
 ```
 
 This puts back your original Pi-hole files and removes the cron job.
-
----
-
-## 📁 What's in the box
-
-| File | What it does |
-|---|---|
-| `install.sh` | Applies the mods and sets up the cron job. Start here |
-| `apply.sh` | Makes the actual edits. Safe to run as often as you like |
-| `temp.snippet` | The bit of code that reads your temperature sensor |
-| `uninstall.sh` | Restores the originals and removes the cron job |
 
 ---
 
@@ -348,7 +455,7 @@ cp /var/www/html/admin/scripts/js/footer.js.bak /var/www/html/admin/scripts/js/f
 
 Then hard-refresh the admin page.
 
-> ⚠️ **Heads up:** Pi-hole updates (`pihole -up`) overwrite these files, so hand edits disappear after an update. To keep them automatically, use the [install script](#-step-4-install) instead.
+> ⚠️ **Heads up:** Pi-hole updates (`pihole -up`) overwrite these files, so hand edits disappear after an update. To keep them automatically, use the [install script](#-step-5-install) instead.
 
 <br>
 
@@ -373,9 +480,9 @@ Heads up: those changes vanish when the container is recreated, unless you bind-
 | What you see | Likely cause | Try this |
 |---|---|---|
 | Nothing changed | Your browser cached the old files | Hard-refresh or open a private window |
-| `Temp: N/A` | The zone numbers don't match your board | Redo Step 1 and update `temp.snippet` |
+| `Temp: N/A` | The zone numbers don't match your board | Redo Step 2 and update `temp.snippet` |
 | `SKIPPED, layout changed` | A Pi-hole update restructured the files | Open an issue and let me know! |
-| Sidebar looks broken | Something went wrong in the edit | Run `sudo bash uninstall.sh` |
+| Sidebar looks broken | Something went wrong in the edit | Run `sudo bash ~/pihole-sidebar-mods/uninstall.sh` |
 | Memory still shows `%` | The `footer.js` edit didn't match | Run `grep -n 'Memory' /var/www/html/admin/scripts/js/footer.js` and compare with the "How it works" section |
 
 ---
