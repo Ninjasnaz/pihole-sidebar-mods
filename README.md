@@ -180,16 +180,177 @@ Pi-hole reports memory in KB, so dividing by 1,048,576 turns it into GB. The mem
 
 > 💡 **Why does my 6 GB board show 5.7 GB?** Your board's firmware and kernel reserve a slice of RAM at boot. That's completely normal.
 
-### Prefer to do it by hand?
+---
 
-You totally can. Here's the quick version:
+<br>
 
-1. Back up `/var/www/html/admin/scripts/lua/sidebar.lp`
-2. Open it with `nano` and find `<span id="memory"></span>`
-3. Add `<br>` to the end of that line, then paste the contents of `temp.snippet` on the next line
-4. Save, then hard-refresh your browser
+## ✋ Prefer to do it by hand?
 
-The memory change works the same way in `/var/www/html/admin/scripts/js/footer.js`, using the before/after shown above.
+You totally can! This walks through the exact same changes the scripts make, one step at a time. Each step tells you what to type and what to expect.
+
+> All commands below run **on your Pi-hole device** (over SSH or directly on it), as **root**. If you're not root, put `sudo` in front of each command.
+
+### Part 1: Find your CPU temperature sensor
+
+**1. List your sensors**
+
+```bash
+for z in /sys/class/thermal/thermal_zone*; do echo "$z  $(cat $z/type)  $(cat $z/temp)"; done
+```
+
+**2. Note the numbers of the zones with `cpu` in the name.** For example, `thermal_zone0` and `thermal_zone3` mean your numbers are **0** and **3**. You'll need them in Part 3.
+
+### Part 2: Back up the files you'll edit
+
+If anything goes wrong, these backups let you undo everything.
+
+**1. Back up the sidebar file**
+
+```bash
+cp /var/www/html/admin/scripts/lua/sidebar.lp /var/www/html/admin/scripts/lua/sidebar.lp.bak
+```
+
+**2. Back up the memory file**
+
+```bash
+cp /var/www/html/admin/scripts/js/footer.js /var/www/html/admin/scripts/js/footer.js.bak
+```
+
+Neither command prints anything. That means it worked.
+
+### Part 3: Add the temperature line
+
+**1. Find the memory line in the sidebar file**
+
+```bash
+grep -n 'id="memory"' /var/www/html/admin/scripts/lua/sidebar.lp
+```
+
+You'll see something like this. The number at the start is the **line number**:
+
+```
+23:                    <span id="memory"></span>
+```
+
+**2. Open the file at that line** (swap `23` for your line number)
+
+```bash
+nano -l +23 /var/www/html/admin/scripts/lua/sidebar.lp
+```
+
+This opens the **nano** text editor with your cursor on the memory line. `-l` shows line numbers down the left side.
+
+**3. Jump to the end of the line**
+
+Press **End**. On a Mac keyboard without an End key, press **Ctrl + E**.
+
+**4. Add a line break tag**
+
+Type `<br>` so the line reads:
+
+```html
+<span id="memory"></span><br>
+```
+
+**5. Start a new line**
+
+Press **Enter**.
+
+**6. Paste the temperature code**
+
+Copy everything below and paste it in. In most terminals, paste is **right-click**, **Ctrl + Shift + V** (Windows / Linux), or **Cmd + V** (Mac).
+
+```html
+<span id="temperature"><i class="fa fa-fw fa-temperature-three-quarters text-green-light"></i>&nbsp;&nbsp;Temp: <?
+local function rd(z)
+  local f = io.open("/sys/class/thermal/thermal_zone" .. z .. "/temp")
+  if not f then return nil end
+  local t = tonumber(f:read("*a")); f:close(); return t
+end
+local a, b = rd(0), rd(3)
+local t = (a and b) and math.max(a, b) or a or b
+mg.write(t and string.format("%.1f&deg;C", t / 1000) or "N/A")
+?></span><br>
+```
+
+**7. Match the sensor numbers to your board**
+
+Find the line `local a, b = rd(0), rd(3)` and change `0` and `3` to your numbers from Part 1. Only one CPU zone? Use the same number twice, like `rd(0), rd(0)`.
+
+**8. Save and exit**
+
+- Press **Ctrl + O**, then **Enter** to save
+- Press **Ctrl + X** to exit
+
+**9. Check your work**
+
+Hard-refresh the Pi-hole admin page: **Cmd + Shift + R** (Mac) or **Ctrl + Shift + R** (Windows / Linux). You should see `Temp: xx.x°C` under Memory usage.
+
+### Part 4: Show memory in GB
+
+**1. Find the memory code**
+
+```bash
+grep -n 'Memory usage' /var/www/html/admin/scripts/js/footer.js
+```
+
+You'll see something like:
+
+```
+318:          '"></i>&nbsp;&nbsp;Memory usage:&nbsp;' +
+```
+
+**2. Open the file at that line** (swap `318` for your line number)
+
+```bash
+nano -l +318 /var/www/html/admin/scripts/js/footer.js
+```
+
+**3. Find these three lines.** Your cursor sits on the first one:
+
+```js
+          '"></i>&nbsp;&nbsp;Memory usage:&nbsp;' +
+          percentRAM.toFixed(1) +
+          "&thinsp;%"
+```
+
+**4. Delete those three lines**
+
+With the cursor on the first line, press **Ctrl + K** three times. Each press removes one line.
+
+**5. Paste the replacement**
+
+Copy these three lines and paste them where the old ones were:
+
+```js
+          '"></i>&nbsp;&nbsp;Memory:&nbsp;' +
+          (system.memory.ram.used / 1048576).toFixed(1) + " / " + totalRAM.toFixed(1) +
+          "&thinsp;" + totalRAMUnit
+```
+
+**6. Save and exit**
+
+- Press **Ctrl + O**, then **Enter** to save
+- Press **Ctrl + X** to exit
+
+**7. Check your work**
+
+Hard-refresh the admin page again. Memory should now read something like `Memory: 0.3 / 5.7GB`. Still showing `%`? Your browser cached the old file, so try a private window.
+
+### Part 5: Undo (if you need to)
+
+Something look off? Put the originals back:
+
+```bash
+cp /var/www/html/admin/scripts/lua/sidebar.lp.bak /var/www/html/admin/scripts/lua/sidebar.lp
+cp /var/www/html/admin/scripts/js/footer.js.bak /var/www/html/admin/scripts/js/footer.js
+```
+
+Then hard-refresh the admin page.
+
+> ⚠️ **Heads up:** Pi-hole updates (`pihole -up`) overwrite these files, so hand edits disappear after an update. To keep them automatically, use the [install script](#-step-4-install) instead.
+
+<br>
 
 ---
 
