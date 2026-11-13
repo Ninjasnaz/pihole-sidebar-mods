@@ -1,0 +1,10 @@
+                    <span id="temperature"><i class="fa fa-fw fa-temperature-three-quarters text-green-light"></i>&nbsp;&nbsp;Temp: <?
+                    local function rd(z)
+                      local f = io.open("/sys/class/thermal/thermal_zone" .. z .. "/temp")
+                      if not f then return nil end
+                      local t = tonumber(f:read("*a")); f:close(); return t
+                    end
+                    local a, b = rd(0), rd(3)
+                    local t = (a and b) and math.max(a, b) or a or b
+                    mg.write(t and string.format("%.1f&deg;C", t / 1000) or "N/A")
+                    ?></span><br>
