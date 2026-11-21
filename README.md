@@ -73,9 +73,9 @@ Every command in this guide runs **on the device that runs Pi-hole** (your Raspb
 ssh <username>@<device-ip>
 ```
 
-Swap in your own details. For example: `ssh pi@192.168.1.1` or `ssh root@192.168.1.1`.
+Swap in your own details. For example: `ssh pi@192.168.1.100` or `ssh root@192.168.1.100`.
 
-- **Don't know the IP?** In the Pi-hole admin page, it's the address in your browser bar (like `http://192.168.1.1/admin`).
+- **Don't know the IP?** In the Pi-hole admin page, it's the address in your browser bar (like `http://192.168.1.100/admin`).
 - **First time connecting?** You'll be asked `Are you sure you want to continue connecting?` Type `yes` and press Enter.
 - Enter your device's password when asked. Nothing shows as you type. That's normal.
 
