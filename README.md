@@ -6,6 +6,7 @@ Welcome! 👋 This is a small set of scripts that adds a couple of handy stats t
 |---|---|
 | `Memory usage: 5.6 %` | `Memory: 0.3 / 5.7GB` |
 | *(no temperature)* | `Temp: 44.4°C` |
+| Narrow sidebar, tiny 11px status text | Roomier 280px sidebar with larger text |
 
 <p align="center">
   <img src="screenshot.png" alt="Pi-hole sidebar showing Memory 0.3 / 5.7GB and Temp 44.4°C" width="700">
@@ -22,6 +23,7 @@ I built this for my **Orange Pi 4 Pro**, but it works on most boards with a few 
 - **CPU temperature** in the sidebar, styled just like the other stats
 - **Memory in GB** (used / total) instead of a percentage
 - **Auto re-apply after updates**, so `pihole -up` won't wipe your changes
+- **A roomier sidebar** with bigger menu and status text, so nothing gets cut off, even if your browser uses a larger font
 - **Easy undo** with one command if you change your mind
 
 ---
@@ -33,6 +35,7 @@ I built this for my **Orange Pi 4 Pro**, but it works on most boards with a few 
 | `install.sh` | Applies the mods and sets up the cron job. Start here |
 | `apply.sh` | Makes the actual edits. Safe to run as often as you like |
 | `temp.snippet` | The bit of code that reads your temperature sensor |
+| `style.snippet` | The CSS that widens the sidebar and enlarges its text |
 | `uninstall.sh` | Restores the originals and removes the cron job |
 
 ---
@@ -206,6 +209,7 @@ Enter your password if asked. You should see something like:
 ```
 Temp line: applied
 Memory line: applied
+Sidebar style: applied
 Cron job installed: every 4 hours
 ```
 
@@ -214,7 +218,8 @@ The installer:
 1. Backs up the original Pi-hole files (as `.bak`)
 2. Adds the temperature line to the sidebar
 3. Switches memory to show GB
-4. Sets up a cron job to re-apply everything every 4 hours
+4. Widens the sidebar and enlarges its text
+5. Sets up a cron job to re-apply everything every 4 hours
 
 **2. See the result**
 
@@ -286,6 +291,20 @@ percentRAM.toFixed(1) +
 Pi-hole reports memory in KB, so dividing by 1,048,576 turns it into GB. The memory line still turns red above 75% used, and hovering over it still shows swap usage.
 
 > 💡 **Why does my 6 GB board show 5.7 GB?** Your board's firmware and kernel reserve a slice of RAM at boot. That's completely normal.
+
+### Sidebar size
+
+Pi-hole's sidebar is a fixed 230px wide, and its status lines use tiny 11px text. If your browser has a larger minimum font size, those lines grow and get cut off at the sidebar's edge.
+
+The installer adds `style.snippet` (a small block of CSS) to the end of `sidebar.lp`. It:
+
+- Widens the sidebar to **280px** and moves the main panel over to match, so there's no gap
+- Sets the status lines to **14px** and the menu to **16px**, so the size no longer depends on your browser's font settings
+- Lays out the logo and status text side by side so long lines always fit
+
+It only applies on screens 768px and wider with the sidebar open. The collapsed sidebar (the `«` button) and phones look exactly like stock Pi-hole.
+
+Want a different width? Change both `280px` values in `style.snippet`, then run `sudo bash ~/pihole-sidebar-mods/uninstall.sh` and `sudo bash ~/pihole-sidebar-mods/install.sh`.
 
 ---
 
@@ -444,7 +463,36 @@ Copy these three lines and paste them where the old ones were:
 
 Hard-refresh the admin page again. Memory should now read something like `Memory: 0.3 / 5.7GB`. Still showing `%`? Your browser cached the old file, so try a private window.
 
-### Part 5: Undo (if you need to)
+### Part 5: Widen the sidebar and enlarge its text
+
+**1. Open the sidebar file**
+
+```bash
+nano /var/www/html/admin/scripts/lua/sidebar.lp
+```
+
+**2. Jump to the very end of the file**
+
+Press **Alt + /**. On a Mac, press **Esc**, let go, then press **/**.
+
+**3. Start a new line**
+
+Press **Enter**.
+
+**4. Paste the CSS**
+
+Open [`style.snippet`](style.snippet), copy everything in it, and paste it into nano.
+
+**5. Save and exit**
+
+- Press **Ctrl + O**, then **Enter** to save
+- Press **Ctrl + X** to exit
+
+**6. Check your work**
+
+Hard-refresh the admin page. The sidebar should be wider, with larger menu and status text.
+
+### Part 6: Undo (if you need to)
 
 Something look off? Put the originals back:
 

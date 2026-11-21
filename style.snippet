@@ -1,0 +1,20 @@
+<style id="sidebar-width-mod">
+@media (min-width: 768px) {
+  body:not(.sidebar-collapse) .main-sidebar,
+  body:not(.sidebar-collapse) .main-header .logo { width: 280px; }
+  body:not(.sidebar-collapse) .content-wrapper,
+  body:not(.sidebar-collapse) .main-footer,
+  body:not(.sidebar-collapse) .main-header .navbar { margin-left: 280px; }
+  body:not(.sidebar-collapse) .main-sidebar .user-panel { display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 14px; }
+  body:not(.sidebar-collapse) .main-sidebar .user-panel::before,
+  body:not(.sidebar-collapse) .main-sidebar .user-panel::after { display: none; }
+  body:not(.sidebar-collapse) .main-sidebar .user-panel > .image { float: none; flex: 0 0 auto; margin: 0; }
+  body:not(.sidebar-collapse) .main-sidebar .user-panel > .image > img { width: 60px; height: auto; }
+  body:not(.sidebar-collapse) .main-sidebar .user-panel > .info { position: static; float: none; left: auto; padding: 0; flex: 1 1 auto; min-width: 0; white-space: normal; }
+  body:not(.sidebar-collapse) .main-sidebar .user-panel > .info > p { font-size: 16px; }
+  body:not(.sidebar-collapse) .main-sidebar .user-panel > .info span { font-size: 14px; line-height: 1.5; }
+  body:not(.sidebar-collapse) .sidebar-menu > li > a { font-size: 16px; }
+  body:not(.sidebar-collapse) .sidebar-menu > li.header { font-size: 13px; }
+  body:not(.sidebar-collapse) .sidebar-menu .pull-right-container .label { font-size: 13px; }
+}
+</style>

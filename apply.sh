@@ -8,6 +8,7 @@ DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 SB=/var/www/html/admin/scripts/lua/sidebar.lp
 JS=/var/www/html/admin/scripts/js/footer.js
 SNIPPET="$DIR/temp.snippet"
+STYLE="$DIR/style.snippet"
 
 # 1. CPU temp line (sidebar.lp)
 if grep -q 'id="temperature"' "$SB"; then
@@ -30,4 +31,13 @@ elif grep -q 'Memory:&nbsp;' "$JS"; then
   echo "Memory line: already applied"
 else
   echo "Memory line: SKIPPED, footer.js layout changed"
+fi
+
+# 3. Wider sidebar and larger text (sidebar.lp)
+if grep -q 'id="sidebar-width-mod"' "$SB"; then
+  echo "Sidebar style: already applied"
+else
+  [ -f "$SB.bak" ] || cp "$SB" "$SB.bak"
+  cat "$STYLE" >> "$SB"
+  echo "Sidebar style: applied"
 fi
